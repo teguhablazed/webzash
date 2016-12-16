@@ -33,6 +33,7 @@
 		<th><?php echo $this->Paginator->sort('status', __d('webzash', 'Status')); ?></th>
 		<th><?php echo $this->Paginator->sort('status', __d('webzash', 'Approved')); ?></th>
 		<th><?php echo $this->Paginator->sort('role', __d('webzash', 'Role')); ?></th>
+		<th><?php echo $this->Paginator->sort('role', __d('webzash', 'Auth Token')); ?></th>
 		<th><?php echo __d('webzash', 'Actions'); ?></th>
 	</tr>
 	<?php foreach ($wzusers as $wzuser) { ?>
@@ -50,6 +51,7 @@
 				?>
 			</td>
 			<td><?php echo h($this->Generic->wzuser_role($wzuser['Wzuser']['role'])); ?></td>
+			<td><?php echo h($wzuser['Wzuser']['authtoken']); ?></td>
 			<td>
 				<?php echo $this->Html->link($this->Html->tag('i', '', array('class' => 'glyphicon glyphicon-edit')) . __d('webzash', ' Edit'), array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'edit', $wzuser['Wzuser']['id']), array('class' => 'no-hover', 'escape' => false)); ?>
 				<?php echo $this->Html->tag('span', '', array('class' => 'link-pad')); ?>

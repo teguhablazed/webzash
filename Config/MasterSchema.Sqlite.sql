@@ -24,6 +24,8 @@ CREATE TABLE "wzusers" (
         "fullname" VARCHAR DEFAULT (null),
         "email" VARCHAR DEFAULT (null),
         "timezone" VARCHAR DEFAULT (null),
+        "authtoken" VARCHAR NOT NULL,
+        "authtoken_expiry" INTEGER NOT NULL DEFAULT (0),
         "role" VARCHAR DEFAULT (null),
         "status" INTEGER NOT NULL DEFAULT (0),
         "verification_key" VARCHAR DEFAULT (null),

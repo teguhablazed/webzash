@@ -131,6 +131,10 @@ class WzusersController extends WebzashAppController {
 				$this->request->data['Wzuser']['retry_count'] = 0;
 				$this->request->data['Wzuser']['timezone'] = 'UTC';
 
+				/* Unique authorization token */
+				$this->request->data['Wzuser']['authtoken'] = sha1(bin2hex(openssl_random_pseudo_bytes(20)) . uniqid() . $this->request->data['Wzuser']['username']);
+				$this->request->data['Wzuser']['authtoken_expiry'] = 0;
+
 				/* Save user */
 				$ds = $this->Wzuser->getDataSource();
 				$ds->begin();
@@ -251,7 +255,7 @@ class WzusersController extends WebzashAppController {
 			$this->request->data['Wzuser']['verification_key'] = Security::hash(uniqid() . uniqid());
 			$this->request->data['Wzuser']['retry_count'] = 0;
 
-			if ($this->Wzuser->save($this->request->data, true, array('username', 'fullname', 'email', 'role', 'status', 'email_verified', 'admin_verified', 'verification_key', 'retry_count', 'all_accounts'))) {
+			if ($this->Wzuser->save($this->request->data, true, array('username', 'fullname', 'email', 'role', 'authtoken', 'status', 'email_verified', 'admin_verified', 'verification_key', 'retry_count', 'all_accounts'))) {
 
 				/* Delete existing user - account associations */
 				if (!$this->Wzuseraccount->deleteAll(array('Wzuseraccount.wzuser_id' => $id))) {
@@ -1091,12 +1095,17 @@ class WzusersController extends WebzashAppController {
 
 				$verification_key = Security::hash(uniqid() . uniqid());
 
+				/* Unique authorization token */
+				$authtoken = sha1(bin2hex(openssl_random_pseudo_bytes(20)) . uniqid() . $this->request->data['Wzuser']['username']);
+
 				$user = array('Wzuser' => array(
 					'username' => $this->request->data['Wzuser']['username'],
 					'password' => Security::hash($this->request->data['Wzuser']['password'], 'sha1', true),
 					'fullname' => $this->request->data['Wzuser']['fullname'],
 					'email' => $this->request->data['Wzuser']['email'],
 					'timezone' => 'UTC',
+					'authtoken' => $authtoken,
+					'authtoken_expiry' = 0,
 					'role' => 'guest',
 					'status' => '1',
 					'verification_key' => $verification_key,

@@ -1105,7 +1105,7 @@ class WzusersController extends WebzashAppController {
 					'email' => $this->request->data['Wzuser']['email'],
 					'timezone' => 'UTC',
 					'authtoken' => $authtoken,
-					'authtoken_expiry' = 0,
+					'authtoken_expiry' => 0,
 					'role' => 'guest',
 					'status' => '1',
 					'verification_key' => $verification_key,

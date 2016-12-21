@@ -43,7 +43,10 @@
 		echo $this->Form->input('admin_verified', array('type' => 'checkbox', 'label' => __d('webzash', 'Administrator approved'), 'class' => 'checkbox'));
 		echo $this->Form->input('role', array('type' => 'select', 'options' => $this->Generic->wzuser_role_options(), 'label' => __d('webzash', 'Role')));
 
-		echo $this->Form->input('authtoken', array('label' => __d('webzash', 'Auth Token')));
+		echo $this->Form->input('authtoken', array(
+			'label' => __d('webzash', 'Auth Token'),
+			'afterInput' => '<span class="help-block">' . __d('webzash', 'Note : Leave empty to autogenerate a random token.') . '</span>',
+		));
 
 		/* Accounts selection */
 		echo $this->Form->input('wzaccount_ids', array(

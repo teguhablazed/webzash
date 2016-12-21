@@ -248,6 +248,12 @@ class WzusersController extends WebzashAppController {
 				$this->request->data['Wzuser']['all_accounts'] = 0;
 			}
 
+			/* Unique authorization token */
+			if ($this->request->data['Wzuser']['authtoken'] == "") {
+				$this->request->data['Wzuser']['authtoken'] = sha1(bin2hex(openssl_random_pseudo_bytes(20)) . uniqid() . $wzuser['Wzuser']['username']);
+				$this->request->data['Wzuser']['authtoken_expiry'] = 0;
+			}
+
 			/* Save user */
 			$ds = $this->Wzuser->getDataSource();
 			$ds->begin();

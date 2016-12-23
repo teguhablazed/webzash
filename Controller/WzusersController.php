@@ -616,22 +616,6 @@ class WzusersController extends WebzashAppController {
 
 			$this->Session->delete('FirstLogin');
 
-			/* Some basic checks for admin role */
-			if ($this->Auth->user('role') == 'admin') {
-				if ($this->request->data['Wzuser']['username'] == 'admin' &&
-					$this->request->data['Wzuser']['password'] == 'admin' &&
-					$this->Auth->user('id') == '1' &&
-					$this->Auth->user('email') == '') {
-					$this->Session->write('FirstLogin', 1);
-					$this->Session->setFlash(__d('webzash', 'Please update your password, fullname and email address to continue.'), 'danger');
-					return $this->redirect(array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'first'));
-				}
-				if ($this->request->data['Wzuser']['password'] == 'admin') {
-					$this->Session->setFlash(__d('webzash', 'Warning ! You are using the default password. Please change your password.'), 'danger');
-					return $this->redirect(array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'changepass'));
-				}
-			}
-
 			if ($this->Auth->user('role') == 'admin') {
 				return $this->redirect(array('plugin' => 'webzash', 'controller' => 'admin', 'action' => 'index'));
 			} else {

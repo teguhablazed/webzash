@@ -540,6 +540,110 @@ class WzusersController extends WebzashAppController {
 	}
 
 /**
+ * login method
+ */
+	public function tokenauth() {
+
+		$this->set('title_for_layout', __d('webzash', 'User Login'));
+
+		$this->Wzuser->useDbConfig = 'wz';
+		$this->Wzsetting->useDbConfig = 'wz';
+
+		$view = new View($this);
+		$this->Html = $view->loadHelper('Html');
+
+		/* Check if this is the first time user is using this application */
+		$default_password = false;
+		$first_login = false;
+
+		$wzsetting = $this->Wzsetting->findById(1);
+
+		if (!isset($this->request->query['token'])) {
+			$this->Session->setFlash(__d('webzash', 'Login failed. Authentication token missing. Please, try again.'), 'danger');
+			return $this->redirect(array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'login'));
+		}
+
+		$user = $this->Wzuser->find('first', array('conditions' => array(
+			'authtoken' => $this->request->query['token']
+		)));
+
+		if (!$user) {
+			$this->Session->setFlash(__d('webzash', 'Login failed. Please, try again.'), 'danger');
+			return $this->redirect(array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'login'));
+		}
+
+		if ($user['Wzuser']['status'] == 0) {
+			$this->Session->setFlash(__d('webzash', 'User account is diabled. Please contact your administrator.'), 'danger');
+			return $this->redirect(array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'login'));
+		}
+		if (!($wzsetting) || $wzsetting['Wzsetting']['admin_verification'] != 0) {
+			 if ($user['Wzuser']['admin_verified'] != 1) {
+				$this->Session->setFlash(__d('webzash', 'Administrator approval is pending. Please contact your administrator.'), 'danger');
+				return $this->redirect(array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'login'));
+			 }
+		}
+		if (!($wzsetting) || $wzsetting['Wzsetting']['email_verification'] != 0) {
+			 if ($user['Wzuser']['email_verified'] != 1) {
+				 $resendURL = $this->Html->link(__d('webzash', 'here'), array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'resend'));
+				$this->Session->setFlash(__d('webzash', 'Email verification is pending. Please verify your email. To resend verification email click ') . $resendURL . '.', 'danger');
+				return $this->redirect(array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'login'));
+			 }
+		}
+
+		/* Login */
+		$login_status = $this->Auth->login($user['Wzuser']);
+
+		if ($login_status) {
+			/* Reset retry count on successful login */
+			$this->Wzuser->read(null, $this->Auth->user('id'));
+			$this->Wzuser->saveField('retry_count', 0);
+
+			if (empty($wzsetting['Wzsetting']['enable_logging'])) {
+				$this->Session->write('Wzsetting.enable_logging', 0);
+			} else {
+				$this->Session->write('Wzsetting.enable_logging', 1);
+			}
+			if (empty($wzsetting['Wzsetting']['row_count'])) {
+				$this->Session->write('Wzsetting.row_count', 10);
+			} else {
+				$this->Session->write('Wzsetting.row_count', $wzsetting['Wzsetting']['row_count']);
+			}
+			if (empty($wzsetting['Wzsetting']['drcr_toby'])) {
+				$this->Session->write('Wzsetting.drcr_toby', 'drcr');
+			} else {
+				$this->Session->write('Wzsetting.drcr_toby', $wzsetting['Wzsetting']['drcr_toby']);
+			}
+
+			$this->Session->delete('FirstLogin');
+
+			/* Some basic checks for admin role */
+			if ($this->Auth->user('role') == 'admin') {
+				if ($this->request->data['Wzuser']['username'] == 'admin' &&
+					$this->request->data['Wzuser']['password'] == 'admin' &&
+					$this->Auth->user('id') == '1' &&
+					$this->Auth->user('email') == '') {
+					$this->Session->write('FirstLogin', 1);
+					$this->Session->setFlash(__d('webzash', 'Please update your password, fullname and email address to continue.'), 'danger');
+					return $this->redirect(array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'first'));
+				}
+				if ($this->request->data['Wzuser']['password'] == 'admin') {
+					$this->Session->setFlash(__d('webzash', 'Warning ! You are using the default password. Please change your password.'), 'danger');
+					return $this->redirect(array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'changepass'));
+				}
+			}
+
+			if ($this->Auth->user('role') == 'admin') {
+				return $this->redirect(array('plugin' => 'webzash', 'controller' => 'admin', 'action' => 'index'));
+			} else {
+				return $this->redirect($this->Auth->redirectUrl());
+			}
+		} else {
+			$this->Session->setFlash(__d('webzash', 'Login failed. Please, try again.'), 'danger');
+			return $this->redirect(array('plugin' => 'webzash', 'controller' => 'wzusers', 'action' => 'login'));
+		}
+	}
+
+/**
  * Third party login method
  */
 	public function tplogin() {
@@ -1364,7 +1468,7 @@ class WzusersController extends WebzashAppController {
 			}
 		}
 
-		$this->Auth->allow('login', 'tplogin', 'logout', 'verify',
+		$this->Auth->allow('login', 'tokenauth', 'tplogin', 'logout', 'verify',
 			'resend', 'forgot', 'register');
 	}
 

@@ -1313,6 +1313,10 @@ class WzusersController extends WebzashAppController {
 		$this->Wzaccount->useDbConfig = 'wz';
 		$this->Wzuseraccount->useDbConfig = 'wz';
 
+		/* Init single account check */
+		$wzaccount_single = FALSE;
+		$wzaccount_single_id = 0;
+
 		$wzuser = $this->Wzuser->findById($this->Auth->user('id'));
 		if (!$wzuser) {
 			$this->Session->setFlash(__d('webzash', 'User not found.'), 'danger');
@@ -1336,6 +1340,13 @@ class WzusersController extends WebzashAppController {
 				'fields' => array('Wzaccount.id', 'Wzaccount.label'),
 				'order' => array('Wzaccount.label')
 			));
+
+			/* If only single account is available set that to be activated */
+			if (count($wzaccounts) == 1) {
+				$wzaccount_single = TRUE;
+				$wzaccount_single_id = array_keys($wzaccounts)[0];
+			}
+
 			$wzaccounts = array(0 => '(NONE)') + $wzaccounts;
 		} else {
 			$wzaccounts = array();
@@ -1348,6 +1359,13 @@ class WzusersController extends WebzashAppController {
 					$wzaccounts[$account['Wzaccount']['id']] = $account['Wzaccount']['label'];
 				}
 			}
+
+			/* If only single account is available set that to be activated */
+			if (count($wzaccounts) == 1) {
+				$wzaccount_single = TRUE;
+				$wzaccount_single_id = array_keys($wzaccounts)[0];
+			}
+
 			$wzaccounts = array(0 => '(NONE)') + $wzaccounts;
 		}
 		$this->set('wzaccounts', $wzaccounts);
@@ -1358,8 +1376,13 @@ class WzusersController extends WebzashAppController {
 			return;
 		}
 
+		/* If only one account, then activate that by creating dummy POST data */
+		if ($wzaccount_single) {
+				$this->request->data['Wzuser']['wzaccount_id'] = $wzaccount_single_id;
+		}
+
 		/* On POST */
-		if ($this->request->is('post') || $this->request->is('put')) {
+		if ($this->request->is('post') || $this->request->is('put') || $wzaccount_single == TRUE) {
 
 			/* Check if NONE selected */
 			if ($this->request->data['Wzuser']['wzaccount_id'] == 0) {

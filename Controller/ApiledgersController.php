@@ -49,6 +49,8 @@ class ApiledgersController extends WebzashAppController {
 	public function index() {
 		//http://127.0.0.1:8080/webzash/
 		//http://127.0.0.1:8080/webzash/apiledgers/index.json
+		//22848e85d0c3456349201858164a703069d11b97/webzash - https://127.0.0.1:8443/webzash/apiledgers/index.json
+		//1e68b8d002d6c2878dc1caf341908f676aa725b4/webzash
 /*
 1. custom header
 
@@ -66,9 +68,8 @@ class ApiledgersController extends WebzashAppController {
 */
         $this->set(array(
             'ledgers' => array('ok'),
-            '_serialize' => array('recipes')
+            '_serialize' => array('ledgers')
         ));
-		debug($this->request->header('Authorization'));
 	}
 
 	public function beforeFilter() {

@@ -305,6 +305,10 @@ function toCodeWithName($code, $name) {
  * Read all account settings from database
  */
 function init_account() {
+	/* If API is called then skip this init function */
+	if (strpos($_SERVER['REQUEST_URI'], '/api') == TRUE) {
+		return;
+	}
 
 	/* Setup master database path inside the Plugin 'Database' folder */
 	$root_path = App::pluginPath('Webzash');

@@ -79,7 +79,7 @@ class WebzashAppController extends AppController {
 	function beforeFilter() {
 
 		/* If API is called then call the api_beforeFilter() function to do the initialization */
-		if (strpos($_SERVER['REQUEST_URI'], '/api') == TRUE) {
+		if (strpos($_SERVER['REQUEST_URI'], 'api') == TRUE) {
 			$this->api_beforeFilter();
 			return;
 		}

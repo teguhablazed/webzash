@@ -231,7 +231,7 @@ class WebzashAppController extends AppController {
 		}
 
 		/* Load the master database configuration in $wz */
-		require_once($root_path . './Config/' . 'MasterConfig.php');
+		require($root_path . './Config/' . 'MasterConfig.php');
 
 		/* Create master database config and try to connect to it */
 		App::uses('ConnectionManager', 'Model');

@@ -49,6 +49,14 @@ class ApientriesController extends WebzashAppController {
 	public function index() {
 		$this->autoRender = false;
 
+		/* Check Request Type */
+		if (!$this->request->is('get')) {
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Method not allowed.')
+			));
+		}
+
 		$conditions = array();
 
 		/* Filter by entry type */
@@ -83,13 +91,199 @@ class ApientriesController extends WebzashAppController {
 			$this->request->data['Entry']['show'] = $this->passedArgs['show'];
 		}
 
-		return json_encode($this->CustomPaginator->paginate('Entry'));
+		// Sanitizing the data for json output
+		$entries = array();
+		foreach ($this->CustomPaginator->paginate('Entry') as $key => $value) {
+			$entries[] = $value['Entry'];
+		}
+
+		return json_encode(array(
+			'status' => 'SUCCESS',
+			'data' => array('entries' => $entries)
+		));
+	}
+
+/**
+ * view method
+ *
+ * @param string $entrytypeLabel
+ * @param string $id
+ * @return void
+ */
+	public function view($entrytypeLabel = null, $id = null) {
+		$this->autoRender = false;
+
+		/* Check Request Type */
+		if (!$this->request->is('get')) {
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Method not allowed.')
+			));
+		}
+
+		/* Check for valid entry type */
+		if (!$entrytypeLabel) {
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Entry type not specified.')
+			));
+		}
+		$entrytype = $this->Entrytype->find('first', array('conditions' => array('Entrytype.label' => $entrytypeLabel)));
+		if (!$entrytype) {
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Entry type not found.')
+			));
+		}
+		$this->set('entrytype', $entrytype);
+
+		/* Check for valid entry id */
+		if (empty($id)) {
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Entry not specified.')
+			));
+		}
+		$entry = $this->Entry->findById($id);
+		if (!$entry) {
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Entry not found.')
+			));
+		}
+
+		/* Initial data */
+		$curEntryitems = array();
+		$curEntryitemsData = $this->Entryitem->find('all', array(
+			'conditions' => array('Entryitem.entry_id' => $id),
+		));
+		foreach ($curEntryitemsData as $row => $data) {
+			if ($data['Entryitem']['dc'] == 'D') {
+				$curEntryitems[$row] = array(
+					'dc' => $data['Entryitem']['dc'],
+					'ledger_id' => $data['Entryitem']['ledger_id'],
+					'ledger_name' => $this->Ledger->getName($data['Entryitem']['ledger_id']),
+					'dr_amount' => $data['Entryitem']['amount'],
+					'cr_amount' => '',
+				);
+			} else {
+				$curEntryitems[$row] = array(
+					'dc' => $data['Entryitem']['dc'],
+					'ledger_id' => $data['Entryitem']['ledger_id'],
+					'ledger_name' => $this->Ledger->getName($data['Entryitem']['ledger_id']),
+					'dr_amount' => '',
+					'cr_amount' => $data['Entryitem']['amount'],
+				);
+			}
+		}
+		$this->set('curEntryitems', $curEntryitems);
+
+		/* Pass varaibles to view which are used in Helpers */
+		$this->set('allTags', $this->Tag->fetchAll());
+
+		$this->set('entry', $entry);
+
+		return json_encode(array(
+			'status' => 'SUCCESS',
+			'data' => array(
+				'entry' => $entry['Entry'],
+				'entry_items' => $curEntryitems
+			),
+		));
+	}
+
+/**
+ * delete method
+ *
+ * @throws MethodNotAllowedException
+ * @param string $entrytypeLabel
+ * @param string $id
+ * @return void
+ */
+	public function delete($entrytypeLabel = null, $id = null) {
+		$this->autoRender = false;
+
+		/* Check Request Type */
+		if (!$this->request->is('delete')) {
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Method not allowed.')
+			));
+		}
+
+		/* Check for valid entry type */
+		if (empty($entrytypeLabel)) {
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Entry type not specified.')
+			));
+		}
+		$entrytype = $this->Entrytype->find('first', array('conditions' => array('Entrytype.label' => $entrytypeLabel)));
+		if (!$entrytype) {
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Entry type not found.')
+			));
+		}
+
+		/* Check if valid id */
+		if (empty($id)) {
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Entry not specified.')
+			));
+		}
+
+		/* Check if entry exists */
+		$entry = $this->Entry->findById($id);
+		if (!$entry) {
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Entry not found.')
+			));
+		}
+
+		$ds = $this->Entry->getDataSource();
+		$ds->begin();
+
+		/* Delete entry items */
+		if (!$this->Entryitem->deleteAll(array('Entryitem.entry_id' => $id))) {
+			$ds->rollback();
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Failed to delete entry items.')
+			));
+		}
+
+		/* Delete entry */
+		if (!$this->Entry->delete($id)) {
+			$ds->rollback();
+			return json_encode(array(
+				'status' => 'ERROR',
+				'msg' => __d('webzash', 'Failed to delete entry.')
+			));
+		}
+
+		$entryNumber = h(toEntryNumber($entry['Entry']['number'], $entrytype['Entrytype']['id']));
+
+		$this->Log->add('Deleted ' . $entrytype['Entrytype']['name'] . ' entry numbered ' . $entryNumber, 1);
+		$ds->commit();
+
+		return json_encode(array(
+			'status' => 'SUCCESS',
+			'msg' => __d('webzash', 'Entry deleted.')
+		));
 	}
 
 	public function beforeFilter() {
 		parent::beforeFilter();
 
+		/* Disable csrf check for API methods */
+		$this->Security->csrfCheck = false;
+
 		$this->Auth->allow('index');
+		$this->Auth->allow('view');
+		$this->Auth->allow('delete');
 	}
 
 	/* Authorization check */

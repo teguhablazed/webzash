@@ -1,6 +1,5 @@
 Webzash - Easy to use web based double entry accounting software
 
-Copyright (c) 2014 Prashant Shah <pshah.mumbai@gmail.com>
 
 Website     : http://webzash.org
 Source code : https://github.com/prashants/webzash
